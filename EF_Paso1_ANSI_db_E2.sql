@@ -911,26 +911,31 @@ AS
 SELECT	G.numero AS NoGrupo, 
 		G.nombre AS Nombre,
         D.descripcion AS Distrito,
-        R.año AS Periodo,
-        COUNT(id_registro) AS Conteo
+        SUM(CASE WHEN DATE_FORMAT(R.fecha_inicio, '%Y') = DATE_FORMAT(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -2 YEAR), '%Y') THEN 1 ELSE 0 END) AS 'T. Antepenultima',
+        SUM(CASE WHEN DATE_FORMAT(R.fecha_inicio, '%Y') = DATE_FORMAT(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -1 YEAR), '%Y') THEN 1 ELSE 0 END) AS 'T. Penultima',
+        SUM(CASE WHEN DATE_FORMAT(R.fecha_inicio, '%Y') = DATE_FORMAT(CURRENT_TIMESTAMP(), '%Y') THEN 1 ELSE 0 END) AS 'T. Actual'
 FROM	grupo G
 JOIN	distrito D ON G.id_distrito = D.id_distrito
 LEFT	JOIN	registro R ON R.id_grupo = G.id_grupo
-GROUP	BY	G.numero, G.nombre, D.descripcion, R.año
-ORDER	BY	R.año DESC, G.numero
+GROUP	BY	G.numero, G.nombre, D.descripcion
+ORDER	BY	G.numero DESC
 ;
-CREATE OR REPLACE VIEW vw_registros_grupo_seccion
+CREATE OR REPLACE VIEW vw_registros_grupo_seccion_actual
 AS
-SELECT	G.numero AS NoGrupo, 
-		G.nombre AS Nombre,
-        S.nombre AS Seccion,
-        R.año AS Periodo,
-        COUNT(id_registro) AS Conteo
+SELECT	CONCAT(G.nombre, ' ', G.numero) AS Grupo,
+        SUM(CASE WHEN S.id_seccion = 1 THEN 1 ELSE 0 END) AS 'Aluxes',
+        SUM(CASE WHEN S.id_seccion = 2 THEN 1 ELSE 0 END) AS 'Gacelas',
+        SUM(CASE WHEN S.id_seccion = 3 THEN 1 ELSE 0 END) AS 'Lobatos',
+        SUM(CASE WHEN S.id_seccion = 4 THEN 1 ELSE 0 END) AS 'Tropa Femenina',
+        SUM(CASE WHEN S.id_seccion = 5 THEN 1 ELSE 0 END) AS 'Tropa Masculina',
+        SUM(CASE WHEN S.id_seccion = 6 THEN 1 ELSE 0 END) AS 'Damas Rover',
+        SUM(CASE WHEN S.id_seccion = 7 THEN 1 ELSE 0 END) AS 'Caballeros Rover',
+        COUNT(id_registro) AS Total
 FROM	grupo G
-LEFT	JOIN	registro R ON R.id_grupo = G.id_grupo
+LEFT	JOIN	registro R ON R.id_grupo = G.id_grupo AND CAST(R.año AS CHAR(10)) = DATE_FORMAT(CURRENT_TIMESTAMP(), '%Y')
 LEFT	JOIN	seccion S ON S.id_seccion = R.id_seccion
-GROUP	BY	G.numero, G.nombre, S.nombre, R.año
-ORDER	BY	R.año DESC, G.numero
+GROUP	BY	G.numero, G.nombre
+ORDER	BY	1 ASC
 ;
 CREATE OR REPLACE VIEW vw_contabiliza_zona_domicilio
 AS
